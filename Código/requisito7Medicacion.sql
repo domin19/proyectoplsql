@@ -1,0 +1,44 @@
+-- Auditoria Medicacion
+SET SERVEROUTPUT ON;
+
+CREATE OR REPLACE TRIGGER auditarMedicacion 
+    BEFORE INSERT OR DELETE OR UPDATE ON MEDICACION
+    FOR EACH ROW -- Ejecutamos el trigger por cada accion dml que estemos realizando
+    
+DECLARE 
+
+     v_RegOld VARCHAR2(100); -- Variable que almacena el registro antiguo
+     v_RegNew VARCHAR2(100); -- Variable que almacena el registro nuevo
+    
+BEGIN
+
+    v_RegOld :=OLD.CODIGO||'#'||OLD.NOMBRE||'#'||OLD.MARCA||'#'||OLD.DESCRIPCION; 
+    v_RegNew :=NEW.CODIGO||'#'||NEW.NOMBRE||'#'||NEW.MARCA||'#'||NEW.DESCRIPCION;
+
+    IF INSERTING THEN -- mientras se este insertando ejecutamos el siguiente comando
+    
+        insertarAuditoria(1,v_RegOld, vRegNew); -- ejecutamos el procedimiento pasando por parametros la acción DML que se realiza, registro antiguo y registro nuevo.
+        
+    ELSIF DELETING THEN -- mientras estemos eliminando ejecutamos la siguiente instruccion
+    
+        insertarAuditoria(2,v_RegOld,v_RegNew);
+        
+    ELSE -- mientras estemos actualizando realizamos lo siguiente
+
+        insertarAuditoria(3,v_RegOld,v_RegNew);
+        
+    END IF;
+
+END auditarMedicacion;
+/
+
+--TEST
+INSERT INTO Medicacion VALUES(6,'Melioraurin','Snafu Pharmaceuticals','N/A');
+UPDATE MEDICACION SET NOMBRE = 'XAS';
+DELETE FROM MEDICACION WHERE CODIGO = 6;
+
+SELECT * FROM AUDITORIA;
+
+--ELIMINACION
+ROLLBACK;
+DROP TRIGGER auditarMedicacion;
